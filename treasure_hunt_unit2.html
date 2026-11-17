@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Treasure Hunt - 6 Groups</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Trebuchet MS",Arial,sans-serif;background:linear-gradient(#7ad7f0,#f6e7b4 70%,#e8c77a);min-height:100vh;color:#3b2a14;text-align:center}
+.wrap{max-width:960px;margin:0 auto;padding:12px}
+h1{margin:6px 0;font-size:28px;color:#7a3e00;text-shadow:1px 1px #fff}
+.school{font-size:14px;color:#5a4a2a}
+.card{background:#fff;border-radius:18px;padding:18px;margin:10px 0;box-shadow:0 4px 10px #0003}
+.teams{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.team{background:#fff;border:4px solid var(--c);border-radius:14px;padding:6px;opacity:.75}
+.team.act{opacity:1;transform:scale(1.04);box-shadow:0 0 14px var(--c);background:#fffbe6}
+.team b{display:block;color:var(--c);font-size:18px}
+.lt{display:flex;gap:2px;justify-content:center;margin-top:3px}
+.lt span{width:22px;height:26px;border:2px dashed #a8742a;border-radius:5px;font-size:15px;font-weight:bold;line-height:22px;color:#b3261e;background:#fff9}
+.lt span.on{background:#ffd54a;border-style:solid}
+.turn{font-size:24px;font-weight:bold;margin:8px 0}
+.tag{display:inline-block;background:#7e57c2;color:#fff;border-radius:20px;padding:2px 12px;font-size:14px;margin-bottom:8px}
+.q{font-size:24px;margin-bottom:12px;min-height:60px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opts button,.big{font-size:20px;padding:14px;border-radius:12px;border:3px solid #1976d2;background:#e3f2fd;cursor:pointer;font-family:inherit}
+.opts button:hover{background:#bbdefb}
+.opts button.ok{background:#66bb6a;border-color:#2e7d32;color:#fff}
+.opts button.no{background:#ef5350;border-color:#b71c1c;color:#fff}
+.big{background:#ff9800;border-color:#e65100;color:#fff;font-weight:bold;font-size:22px;padding:12px 30px;margin:6px}
+.sel button{width:56px;height:56px;border-radius:50%;font-size:24px;font-weight:bold;border:4px solid #a8742a;background:#fff;cursor:pointer;margin:4px}
+.sel button.on{background:#ff9800;color:#fff}
+.msg{font-size:24px;font-weight:bold;min-height:34px;margin-top:10px}
+.hidden{display:none!important}
+.credit{margin:16px 0 6px;font-size:14px;color:#5a4a2a}
+.rank div{font-size:20px;margin:4px}
+@media(max-width:560px){.opts{grid-template-columns:1fr}.teams{grid-template-columns:repeat(2,1fr)}.lt span{width:18px;height:22px;font-size:12px;line-height:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏴‍☠️ Treasure Hunt 🗺️</h1>
+  <div class="school">Khawlah Bint Thalabah (5-9) &middot; Grade 7 &middot; Unit 2: Awesome animals</div>
+
+  <div id="start" class="card">
+    <div style="font-size:80px">🧰</div>
+    <p style="font-size:20px">Groups take turns. Answer correctly to win a letter of <b>TREASURE</b>.<br>The first group to collect all 8 letters opens the chest!</p>
+    <p style="font-size:20px"><b>How many groups?</b></p>
+    <div class="sel" id="sel"></div>
+    <button class="big" onclick="startGame()">Start the Hunt!</button>
+  </div>
+
+  <div id="game" class="hidden">
+    <div class="teams" id="teams"></div>
+    <div class="turn" id="turn"></div>
+    <div class="card">
+      <span class="tag" id="tag"></span>
+      <div class="q" id="q"></div>
+      <div class="opts" id="opts"></div>
+      <div class="msg" id="msg"></div>
+      <button class="big hidden" id="next" onclick="nextTurn()">Next group ➜</button>
+    </div>
+  </div>
+
+  <div id="end" class="card hidden">
+    <div style="font-size:90px">🏆💰</div>
+    <h2 id="endTitle"></h2>
+    <div class="rank" id="rank"></div>
+    <button class="big" onclick="location.reload()">Play again</button>
+  </div>
+
+  <div class="credit">Created by T.Badria Alfalahi</div>
+</div>
+
+<script>
+var V="Animal verbs",B="Body parts",M="Modals of deduction",C="First conditional",G="Going to / Will";
+var BANK=[
+[V,"The rabbit sees the fox. It ___ quickly.","run away",["dig","sting","lay eggs"]],
+[V,"The monkey should ___ in the trees when it sees danger.","hide",["dive","lay eggs","roar"]],
+[V,"Two goats can ___ with their horns.","fight",["dive","hide","curl up"]],
+[V,"The crab uses its claws to ___ a hole in the sand.","dig",["roar","fly away","die"]],
+[V,"A crocodile can ___ you with its big teeth.","bite",["lay eggs","curl up","dive"]],
+[V,"A turtle can ___ on the beach.","lay eggs",["bite","die","roar"]],
+[V,"The bird is scared. It will ___.","fly away",["dig","roar","sting"]],
+[V,"A bee can ___ you if you touch it.","sting",["dig","hide","dive"]],
+[V,"A lion can ___ very loudly.","roar",["dig","hide","sting"]],
+[V,"A hedgehog can ___ into a ball when it is scared.","curl up",["dive","roar","bite"]],
+[V,"A shark can ___ deep into the sea.","dive",["curl up","lay eggs","roar"]],
+[V,"A fish can ___ if there is no water.","die",["dig","roar","fight"]],
+[V,"Which words mean: to go away quickly because you are afraid?","run away",["curl up","lay eggs","dive"]],
+[V,"Birds ___ in their nests.","lay eggs",["sting","roar","dive"]],
+[B,"A bird uses its ___ to eat.","beak",["horn","fins","hump"]],
+[B,"A cat has long ___ on its face.","whiskers",["hump","fins","paws"]],
+[B,"A rhino has a ___ on its nose.","horn",["beak","paws","fins"]],
+[B,"A fish uses its ___ to swim.","fins",["paws","hump","horn"]],
+[B,"A camel has a ___ on its back.","hump",["beak","whiskers","fins"]],
+[B,"A cat has four soft ___.","paws",["fins","beak","hump"]],
+[M,"I'm not sure, but it ___ be a snake. It's long and has no legs.","may",["must","can't","will"]],
+[M,"I'm sure! It's black and white and looks like a horse. It ___ be a zebra.","must",["can't","may","could"]],
+[M,"It's very small and has two wings. It ___ be an elephant.","can't",["must","might","may"]],
+[M,"It has two legs and it lays eggs. I'm sure it ___ be a bird.","must",["can't","might","may"]],
+[M,"It's very big and grey with big ears. I'm not sure, but it ___ be an elephant.","might",["must","can't","will"]],
+[M,"It lives in the sea and has fins. It ___ be a camel.","can't",["must","might","could"]],
+[M,"It has a very long neck. I'm not sure, but it ___ be a giraffe.","could",["can't","must","will"]],
+[M,"Put the words in order: interesting / insects / really / I / find","I find insects really interesting.",["I insects find really interesting.","Find I really insects interesting.","Really I find interesting insects."]],
+[C,"If I pass my English exam, I ___ happy.","will be",["would be","was","am being"]],
+[C,"If students don't do their homework, the teacher ___ angry.","will be",["would be","was","is being"]],
+[C,"If you come with us, you ___ with the best animals.","will be",["would be","are being","was"]],
+[C,"If I don't join the fish, they ___ angry.","will be",["would be","are being","was"]],
+[C,"If I join the lions, the birds ___ happy.","won't be",["don't be","isn't","not will be"]],
+[C,"If it rains tomorrow, we ___ at home.","will stay",["would stay","stayed","staying"]],
+[C,"If you ___ hard, you will pass the exam.","study",["will study","studied","studying"]],
+[C,"If she ___ late, she will miss the bus.","is",["will be","was","being"]],
+[G,"I've already decided! Next summer I ___ visit London.","am going to",["will","going to","am go to"]],
+[G,"Oh, the phone is ringing! I ___ answer it.","will",["am going to","going to","did"]],
+[G,"We bought the tickets yesterday. We ___ travel on Friday.","are going to",["will","is going to","are going"]],
+[G,"A: It's hot in here. B: I ___ open the window.","will",["am going to","going to","did"]],
+[G,"She has a plan. She ___ look for it now.","is going to",["will","are going to","going to"]],
+[G,"Negative form: I ___ travel. (will)","won't",["not will","don't will","willn't"]],
+[G,"Negative form: I'm ___ going to travel.","not",["don't","won't","no"]],
+[G,"Going to: Subject + ___ + going to + base verb.","am / is / are",["will","do / does","have / has"]],
+[G,"Which sentence shows a PLAN?","I'm going to visit London.",["I'll take a small bag, too.","We'll get some sweets.","I'll help you now."]],
+[G,"Which sentence is a decision AT THE MOMENT of speaking?","I'll help you now.",["We're going to take a guidebook.","She's going to look for it now.","I'm going to visit London."]],
+[G,"We use ___ when we decide at the time of speaking.","will",["going to","would","did"]],
+[B,"Which word is an animal body part?","hump",["roar","dig","hide"]]
+];
+var COLORS=["#e53935","#1e88e5","#43a047","#fb8c00","#8e24aa","#00acc1"];
+var WORD="TREASURE";
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t}return a}
+var AC=window.AudioContext||window.webkitAudioContext,ac;
+function beep(f,d){try{ac=ac||new AC();var o=ac.createOscillator(),g=ac.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+var N=6,got,turn,deck,locked,cur;
+function drawSel(){
+  var h="";for(var k=2;k<=6;k++)h+='<button class="'+(k==N?"on":"")+'" onclick="N='+k+';drawSel()">'+k+'</button>';
+  document.getElementById("sel").innerHTML=h;
+}
+drawSel();
+function show(id){["start","game","end"].forEach(function(x){document.getElementById(x).classList.toggle("hidden",x!==id)})}
+function startGame(){
+  got=[];for(var k=0;k<N;k++)got.push(0);
+  turn=0;deck=shuffle(BANK);show("game");drawTeams();ask();
+}
+function drawTeams(){
+  var h="";
+  for(var k=0;k<N;k++){
+    var l="";for(var j=0;j<8;j++)l+='<span class="'+(j<got[k]?"on":"")+'">'+(j<got[k]?WORD[j]:"")+'</span>';
+    h+='<div class="team '+(k==turn?"act":"")+'" style="--c:'+COLORS[k]+'"><b>Group '+(k+1)+'</b><div class="lt">'+l+'</div></div>';
+  }
+  document.getElementById("teams").innerHTML=h;
+  var t=document.getElementById("turn");t.textContent="👉 Group "+(turn+1)+", it's your turn!";t.style.color=COLORS[turn];
+}
+function ask(){
+  if(!deck.length)deck=shuffle(BANK);
+  cur=deck.pop();locked=false;
+  document.getElementById("tag").textContent=cur[0];
+  document.getElementById("q").textContent=cur[1];
+  var box=document.getElementById("opts");box.innerHTML="";
+  shuffle([cur[2]].concat(cur[3])).forEach(function(t){
+    var b=document.createElement("button");b.textContent=t;b.onclick=function(){pick(b)};box.appendChild(b);
+  });
+  document.getElementById("msg").textContent="";
+  document.getElementById("next").classList.add("hidden");
+}
+function pick(b){
+  if(locked)return;locked=true;
+  var ok=b.textContent===cur[2],m=document.getElementById("msg");
+  if(ok){
+    b.classList.add("ok");beep(660,.15);setTimeout(function(){beep(880,.2)},150);
+    got[turn]++;m.textContent="✅ Correct! Letter "+WORD[got[turn]-1]+" is yours!";
+    drawTeams();
+    if(got[turn]>=8){setTimeout(finish,1200);return}
+  }else{
+    b.classList.add("no");beep(200,.3);
+    Array.prototype.forEach.call(document.getElementById("opts").children,function(x){if(x.textContent===cur[2])x.classList.add("ok")});
+    m.textContent="❌ Not this time. The answer is: "+cur[2];
+  }
+  document.getElementById("next").classList.remove("hidden");
+}
+function nextTurn(){turn=(turn+1)%N;drawTeams();ask()}
+function finish(){
+  show("end");
+  document.getElementById("endTitle").textContent="🎉 Group "+(turn+1)+" found the TREASURE! 🎉";
+  var order=[];for(var k=0;k<N;k++)order.push(k);
+  order.sort(function(a,b){return got[b]-got[a]});
+  var h="",medals=["🥇","🥈","🥉"];
+  order.forEach(function(k,i){h+='<div style="color:'+COLORS[k]+'">'+(medals[i]||"")+' Group '+(k+1)+': '+got[k]+' letters</div>'});
+  document.getElementById("rank").innerHTML=h;
+  beep(523,.15);setTimeout(function(){beep(659,.15)},160);setTimeout(function(){beep(784,.3)},320);
+}
+</script>
+</body>
+</html>
